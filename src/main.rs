@@ -1,6 +1,6 @@
 pub mod blockchain;
 use blockchain::{Block, BlockChain, BlockSearch, BlockSearchResult};
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 
 fn get_block_search_result(result: BlockSearchResult) {
     match result {

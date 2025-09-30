@@ -114,59 +114,44 @@ impl BlockChain {
     }
 
     pub fn search_block(&self, search: BlockSearch) -> BlockSearchResult {
+        // Check if the chain is empty first
+        if self.chain.is_empty() {
+            return BlockSearchResult::FailOfEmptyBlocks;
+        }
+
+        // Handle SearchByIndex separately since it has different logic
+        if let BlockSearch::SearchByIndex(index) = search {
+            if index >= self.chain.len() {
+                return BlockSearchResult::FailOfIndex(index);
+            }
+            return BlockSearchResult::Success(&self.chain[index]);
+        }
+
+        // For other search types, iterate through the chain
         for (idx, block) in self.chain.iter().enumerate() {
             match search {
-                BlockSearch::SearchByIndex(index) => {
-                    if idx == index {
-                        return BlockSearchResult::Success(block);
-                    }
-
-                    if index >= self.chain.len() {
-                        return BlockSearchResult::FailOfIndex(index);
-                    }
+                BlockSearch::SearchByIndex(_) => {
+                    // This case is already handled above
+                    unreachable!()
                 }
                 BlockSearch::SearchByPreviousHash(ref hash) => {
-                    // enum matching can cause data ownership transer,
-                    // the hash value attach to search is transer to local
-                    // variable o hash here, it will dropped and not available
-                    // for the next it would be already consumed. That's why we
-                    // are using the ref keyword in front of hash variable
                     if block.previous_hash == *hash {
                         return BlockSearchResult::Success(block);
-                    }
-
-                    if idx >= self.chain.len() {
-                        // the data type for FailOfPreviousHash is Vec<u8>, but
-                        // the hash is a &Vec<u8>
-                        // to_vec will cause the &Vec<u8> to clone its Vec<u8> data
-                        return BlockSearchResult::FailOfPreviousHash(hash.to_vec());
                     }
                 }
                 BlockSearch::SearchByBlockHash(ref hash) => {
                     if block.hash() == *hash {
                         return BlockSearchResult::Success(block);
                     }
-
-                    if idx >= self.chain.len() {
-                        return BlockSearchResult::FailOfBlockHash(hash.to_vec());
-                    }
                 }
                 BlockSearch::SearchByNonce(nonce) => {
                     if block.nonce == nonce {
                         return BlockSearchResult::Success(block);
                     }
-
-                    if idx >= self.chain.len() {
-                        return BlockSearchResult::FailOfNonce(nonce);
-                    }
                 }
                 BlockSearch::SearchByTimestamp(time_stamp) => {
                     if block.time_stamp == time_stamp {
                         return BlockSearchResult::Success(block);
-                    }
-
-                    if idx >= self.chain.len() {
-                        return BlockSearchResult::FailOfTimestamp(time_stamp);
                     }
                 }
                 BlockSearch::SearchByTransaction(ref transaction) => {
@@ -174,14 +159,19 @@ impl BlockChain {
                         if tx == transaction {
                             return BlockSearchResult::Success(block);
                         }
-
-                        if idx >= self.chain.len() {
-                            return BlockSearchResult::FailOfTransaction(transaction.to_vec());
-                        }
                     }
                 }
             }
-            return BlockSearchResult::FailOfEmptyBlocks;
+        }
+
+        // If we reach here, the search failed
+        match search {
+            BlockSearch::SearchByIndex(_) => unreachable!(), // Already handled above
+            BlockSearch::SearchByPreviousHash(hash) => BlockSearchResult::FailOfPreviousHash(hash),
+            BlockSearch::SearchByBlockHash(hash) => BlockSearchResult::FailOfBlockHash(hash),
+            BlockSearch::SearchByNonce(nonce) => BlockSearchResult::FailOfNonce(nonce),
+            BlockSearch::SearchByTimestamp(time_stamp) => BlockSearchResult::FailOfTimestamp(time_stamp),
+            BlockSearch::SearchByTransaction(transaction) => BlockSearchResult::FailOfTransaction(transaction),
         }
     }
 }
