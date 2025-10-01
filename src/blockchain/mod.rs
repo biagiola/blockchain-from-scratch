@@ -1,5 +1,13 @@
 use sha2::{Digest, Sha256};
 use std::time::SystemTime;
+use transaction::*;
+
+pub mod transaction;
+
+pub trait Serialization<T> {
+    fn serialization(&self) -> Vec<u8>;
+    fn deserialization(bytes: &Vec<u8>) -> T;
+}
 
 pub enum BlockSearch {
     // tag value
@@ -67,6 +75,7 @@ impl Block {
 
         let mut hasher = Sha256::new();
         hasher.update(bin);
+
         hasher.finalize().to_vec()
     }
 }
@@ -84,12 +93,20 @@ impl BlockChain {
             chain: Vec::<Block>::new(),
         };
 
-        bc.create_block(0, vec![0 as u8; 32]);
+        bc.create_block(0, &vec![0 as u8; 32]);
         bc
     }
 
-    pub fn create_block(&mut self, nonce: i32, previous_hash: Vec<u8>) {
-        let b = Block::new(nonce, previous_hash);
+    pub fn create_block(&mut self, nonce: i32, previous_hash: &Vec<u8>) {
+        // TODO: consider to use reference and add the lifetime annotation
+        // to the new contructor.
+        let mut b = Block::new(nonce, previous_hash.clone());
+
+        for tx in self.transaction_pool.iter() {
+            b.transactions.push(tx.clone());
+        }
+
+        self.transaction_pool.clear();
         self.chain.push(b);
     }
 
@@ -173,5 +190,22 @@ impl BlockChain {
             BlockSearch::SearchByTimestamp(time_stamp) => BlockSearchResult::FailOfTimestamp(time_stamp),
             BlockSearch::SearchByTransaction(transaction) => BlockSearchResult::FailOfTransaction(transaction),
         }
+    }
+
+    pub fn add_transaction(&mut self, tx: &impl Serialization<Transaction>) {
+        // println!("tx: {}", tx); // tx is not Transaction anymore
+        println!("tx_in_pool: {:?}", self.transaction_pool);
+        println!("tx.serialized: {:?}", tx.serialization());
+
+        for tx_in_pool in self.transaction_pool.iter() {
+            if *tx_in_pool == tx.serialization() {
+                println!("we reach return");
+                return; // TODO: verify this
+            } else {
+                println!("we don't reach return");
+            }
+        }
+
+        self.transaction_pool.push(tx.serialization());
     }
 }
