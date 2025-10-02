@@ -1,8 +1,10 @@
-use sha2::{Digest, Sha256};
-use std::time::SystemTime;
-use transaction::*;
+use std::{panic, time::SystemTime};
 use std::ops::AddAssign;
 use std::time::Instant;
+use std::cmp::PartialEq;
+use std::ops::Index;
+use sha2::{Digest, Sha256};
+use transaction::*;
 
 pub mod transaction;
 
@@ -45,6 +47,14 @@ pub struct Block {
 impl AddAssign<i32> for Block {
     fn add_assign(&mut self, rhs: i32) {
         self.nonce += rhs;
+    }
+}
+
+impl PartialEq for Block {
+    fn eq(&self, other: &Self) -> bool {
+        let self_hash: Vec<u8> = self.hash();
+        let other_hash: Vec<u8> = self.hash();
+        self_hash == other_hash
     }
 }
 
@@ -92,6 +102,24 @@ impl Block {
 pub struct BlockChain {
     transaction_pool: Vec<Vec<u8>>,
     chain: Vec<Block>,
+}
+
+impl Index<usize> for BlockChain {
+    type Output = Block;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let res: Option<&Block> = self.chain.get(index);
+        match res {
+            Some(block) => {
+                return block;
+                // btw, block is a struct, a complex type, if that was a i32 for example, we dont have
+                // to deal with reference, in this case our reference is block, coming from the let res variable
+            }
+            None => {
+                panic!("index out of range for the chain") // TODO: consider to change
+            }
+        }
+    }
 }
 
 impl BlockChain {

@@ -146,5 +146,15 @@ fn main() {
     // search block
     search_blocks(&block_chain, &previous_hash, false);
 
-    block_chain.print();
+    // block_chain.print();
+
+    // now we can make comparations between blocks
+    let block1: Block = Block::new(0, "previous hash".as_bytes().to_vec());
+    let block2: Block = Block::new(0, "previous hash".as_bytes().to_vec());
+    println!("block1 == block2: {:?}", block1 == block2);
+
+    // we can access to an specific block
+    let mut block_chain: BlockChain = create_block_chain(false);
+    let block: &Block = &block_chain[0];
+    println!("the first block is: {:?}", block);
 }
