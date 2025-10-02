@@ -1,16 +1,18 @@
 pub mod blockchain;
 use crate::blockchain::{transaction::Transaction, Serialization};
 use blockchain::{Block, BlockChain, BlockSearch, BlockSearchResult};
-// use sha2::Sha256;
+use sha2::{Digest, Sha256};
 // use transaction::*;
 
-// fn create_hasher() {
-//     let mut hasher = Sha256::new();
-//     hasher.update(b"Hello world\n");
-//     // :x to use the hex format
-//     println!("hash result is: {:x}", result);
-//     hasher.finalize()
-// }
+fn _create_hasher() {
+    let mut hasher = Sha256::new();
+    hasher.update(b"Hello world\n");
+    // :x to use the hex format
+    // println!("hash result is: {:x}", hasher);
+    let result = hasher.finalize();
+    println!("this is the hasher: {:?}", result);
+    println!("this is the hasher: {:x?}", result);
+}
 
 fn _create_block(print: bool) {
     let b = Block::new(0, "this is our first block!".to_string().into_bytes());
@@ -33,6 +35,7 @@ fn create_block_chain(print: bool) -> BlockChain {
 }
 
 fn get_previous_hash(block_chain: &BlockChain, print: bool) -> Vec<u8> {
+
     // Display the hash of the block.
     // Right now there is only one block.
     let previous_hash = block_chain.last_block().hash();
@@ -46,7 +49,7 @@ fn get_previous_hash(block_chain: &BlockChain, print: bool) -> Vec<u8> {
     previous_hash
 }
 
-fn verify_serialization(print: bool) -> Transaction {
+fn create_serialized_tx(print: bool) -> Transaction {
     // create transaction
     let tx: Transaction = Transaction::new(
         "sender".as_bytes().to_vec(),
@@ -54,13 +57,13 @@ fn verify_serialization(print: bool) -> Transaction {
         100,
     );
 
-    // encoded
-    let serialized_tx = tx.serialization();
-
-    // decoded
-    let deserialized_tx = Transaction::deserialization(&serialized_tx);
-
     if print {
+        // encoded
+        let serialized_tx = tx.serialization();
+
+        // decoded
+        let deserialized_tx = Transaction::deserialization(&serialized_tx);
+        
         println!("Transaction using modified display trait: {}", tx);
         println!("Transaction using non-modified debug trait: {:#?}", tx);
 
@@ -102,6 +105,8 @@ fn get_block_search_result(result: BlockSearchResult) {
 }
 
 fn main() {
+    // _create_hasher();
+
     let mut block_chain: BlockChain = create_block_chain(false);
 
     // block 1
@@ -113,18 +118,20 @@ fn main() {
     block_chain.create_block(2, &previous_hash);
 
     // serializations/deserialization
-    let tx: Transaction = verify_serialization(false);
+    let tx: Transaction = create_serialized_tx(false);
 
     // add transactions to the (last) block
-    // TODO: looks like anything was added actually
     block_chain.add_transaction(&tx);
+
+    // so block 3 is going to grab all the current trxs available from the pool
+    block_chain.create_block(3, &block_chain.last_block().hash());
 
     // show the entire blocks in the chain
     block_chain.print();
 
     // search block
-    let block_search_result_enum = block_chain.search_block(BlockSearch::SearchByIndex(1));
-    get_block_search_result(block_search_result_enum);
+    // let block_search_result_enum = block_chain.search_block(BlockSearch::SearchByIndex(1));
+    // get_block_search_result(block_search_result_enum);
 
     let hash_to_find = previous_hash.clone();
     let result = block_chain.search_block(BlockSearch::SearchByBlockHash(hash_to_find));

@@ -115,7 +115,7 @@ impl BlockChain {
             println!("{} chain {} {}", "=".repeat(25), i, "=".repeat(25));
             block.print();
         }
-        println!("{}", "*".repeat(25));
+        println!("{}", "=".repeat(25));
     }
 
     pub fn last_block(&self) -> &Block {
@@ -193,16 +193,13 @@ impl BlockChain {
     }
 
     pub fn add_transaction(&mut self, tx: &impl Serialization<Transaction>) {
-        // println!("tx: {}", tx); // tx is not Transaction anymore
         println!("tx_in_pool: {:?}", self.transaction_pool);
         println!("tx.serialized: {:?}", tx.serialization());
 
+        // detects duplicate
         for tx_in_pool in self.transaction_pool.iter() {
             if *tx_in_pool == tx.serialization() {
-                println!("we reach return");
-                return; // TODO: verify this
-            } else {
-                println!("we don't reach return");
+                return;
             }
         }
 
