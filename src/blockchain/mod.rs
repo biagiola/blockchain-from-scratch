@@ -2,6 +2,7 @@ use sha2::{Digest, Sha256};
 use std::time::SystemTime;
 use transaction::*;
 use std::ops::AddAssign;
+use std::time::Instant;
 
 pub mod transaction;
 
@@ -94,6 +95,8 @@ pub struct BlockChain {
 }
 
 impl BlockChain {
+    const DIFFICULTY: usize = 3;
+
     pub fn new() -> Self {
         let mut bc = BlockChain {
             transaction_pool: Vec::<Vec<u8>>::new(),
@@ -114,6 +117,14 @@ impl BlockChain {
         }
 
         self.transaction_pool.clear();
+
+        // do proof of work
+        let now = Instant::now();
+        let proof_hash = BlockChain::do_proof_of_work(&mut b);
+        let elapsed = now.elapsed();
+        println!("compuse time: {:?}", elapsed);
+        println!("proof of current block: {:?}", proof_hash);
+
         self.chain.push(b);
     }
 
@@ -208,5 +219,18 @@ impl BlockChain {
         }
 
         self.transaction_pool.push(tx.serialization());
+    }
+
+    fn do_proof_of_work(block: &mut Block) -> String {
+        loop {
+            let hash: Vec<u8> = block.hash();
+            let hash_str: String = hex::encode(&hash);
+
+            if hash_str[0..BlockChain::DIFFICULTY] == "0".repeat(BlockChain::DIFFICULTY) {
+                return hash_str;
+            }
+
+            *block += 1;
+        }
     }
 }

@@ -146,11 +146,5 @@ fn main() {
     // search block
     search_blocks(&block_chain, &previous_hash, false);
 
-
-    // TEST: the overloading operator
-    let mut block: Block = Block::new(0, "previous hash".as_bytes().to_vec());
-    println!("block before += 1 is: {:#?}", block);
-
-    block += 1;
-    println!("block after +=1 is: {:#?}", block);
+    block_chain.print();
 }
