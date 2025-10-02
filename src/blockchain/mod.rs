@@ -1,6 +1,7 @@
 use sha2::{Digest, Sha256};
 use std::time::SystemTime;
 use transaction::*;
+use std::ops::AddAssign;
 
 pub mod transaction;
 
@@ -38,6 +39,12 @@ pub struct Block {
     pub previous_hash: Vec<u8>,
     pub time_stamp: u128,
     pub transactions: Vec<Vec<u8>>,
+}
+
+impl AddAssign<i32> for Block {
+    fn add_assign(&mut self, rhs: i32) {
+        self.nonce += rhs;
+    }
 }
 
 impl Block {
@@ -193,9 +200,6 @@ impl BlockChain {
     }
 
     pub fn add_transaction(&mut self, tx: &impl Serialization<Transaction>) {
-        println!("tx_in_pool: {:?}", self.transaction_pool);
-        println!("tx.serialized: {:?}", tx.serialization());
-
         // detects duplicate
         for tx_in_pool in self.transaction_pool.iter() {
             if *tx_in_pool == tx.serialization() {

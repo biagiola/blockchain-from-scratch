@@ -63,7 +63,7 @@ fn create_serialized_tx(print: bool) -> Transaction {
 
         // decoded
         let deserialized_tx = Transaction::deserialization(&serialized_tx);
-        
+
         println!("Transaction using modified display trait: {}", tx);
         println!("Transaction using non-modified debug trait: {:#?}", tx);
 
@@ -104,6 +104,20 @@ fn get_block_search_result(result: BlockSearchResult) {
     }
 }
 
+fn search_blocks(block_chain: &BlockChain, previous_hash: &Vec<u8>, print: bool) {
+    // search by index
+    let block_search_result_enum = block_chain.search_block(BlockSearch::SearchByIndex(1));
+
+    // search by hash
+    let hash_to_find = previous_hash.clone();
+    let result = block_chain.search_block(BlockSearch::SearchByBlockHash(hash_to_find));
+
+    if print {
+        get_block_search_result(block_search_result_enum);
+        get_block_search_result(result);
+    }
+}
+
 fn main() {
     // _create_hasher();
 
@@ -127,13 +141,16 @@ fn main() {
     block_chain.create_block(3, &block_chain.last_block().hash());
 
     // show the entire blocks in the chain
-    block_chain.print();
+    // block_chain.print();
 
     // search block
-    // let block_search_result_enum = block_chain.search_block(BlockSearch::SearchByIndex(1));
-    // get_block_search_result(block_search_result_enum);
+    search_blocks(&block_chain, &previous_hash, false);
 
-    let hash_to_find = previous_hash.clone();
-    let result = block_chain.search_block(BlockSearch::SearchByBlockHash(hash_to_find));
-    get_block_search_result(result);
+
+    // TEST: the overloading operator
+    let mut block: Block = Block::new(0, "previous hash".as_bytes().to_vec());
+    println!("block before += 1 is: {:#?}", block);
+
+    block += 1;
+    println!("block after +=1 is: {:#?}", block);
 }
