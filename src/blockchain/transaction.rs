@@ -3,9 +3,9 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct Transaction {
-    sender_address: Vec<u8>,
-    recipient_address: Vec<u8>,
-    value: u64,
+    pub sender_address: Vec<u8>,
+    pub recipient_address: Vec<u8>,
+    pub value: u64,
 }
 
 impl Transaction {
@@ -69,6 +69,9 @@ impl Serialization<Transaction> for Transaction {
 
 impl fmt::Display for Transaction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: verify sender and recipient address, maybe there's a bad casting
+        // using the to_vec() or into() methods
+        // sender address: [67]
         write!(
             f,
             "\n{}\nsender address: {:?} \nrecipient address: {:?}\nvalue: {}\n{}",
