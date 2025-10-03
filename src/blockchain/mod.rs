@@ -169,15 +169,15 @@ impl BlockChain {
         );
 
         self.add_transaction(&tx);
-        // TODO: we don't need to pass the nonce to the create_block method.
-        // Each block will have its own founded nonce.
-        self.create_block(0, &self.last_block().hash());
+        self.create_block(&self.last_block().hash());
         true
     }
 
-    pub fn create_block(&mut self, nonce: i32, previous_hash: &Vec<u8>) {
+    pub fn create_block(&mut self, previous_hash: &Vec<u8>) {
         // TODO: consider to use reference and add the lifetime annotation
         // to the new contructor.
+        let nonce: i32 = 0;
+
         let mut b = Block::new(nonce, previous_hash.clone());
 
         // add the pending transactions to the block
