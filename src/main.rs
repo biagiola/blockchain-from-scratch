@@ -22,17 +22,17 @@ fn _create_block(print: bool) {
     }
 }
 
-// fn create_block_chain(print: bool) -> BlockChain {
-//     // create the chain of blocks
-//     // by default, the constructor will create the genesis block
-//     let block_chain = BlockChain::new(); // TODO: add address
+fn create_block_chain(address: String, print: bool) -> BlockChain {
+    // create the chain of blocks
+    // by default, the constructor will create the genesis block
+    let block_chain = BlockChain::new(address); // TODO: add address
 
-//     if print {
-//         block_chain.print();
-//     }
+    if print {
+        block_chain.print();
+    }
 
-//     block_chain
-// }
+    block_chain
+}
 
 fn get_previous_hash(block_chain: &BlockChain, print: bool) -> Vec<u8> {
 
@@ -121,7 +121,8 @@ fn search_blocks(block_chain: &BlockChain, previous_hash: &Vec<u8>, print: bool)
 fn main() {
     // // _create_hasher();
 
-    // let mut block_chain: BlockChain = create_block_chain(false);
+    // let address: &str = "0xFake_address";
+    // let mut block_chain: BlockChain = create_block_chain(address, false);
 
     // // block 1
     // let previous_hash: Vec<u8> = get_previous_hash(&block_chain, false);

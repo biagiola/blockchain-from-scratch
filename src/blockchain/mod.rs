@@ -59,8 +59,9 @@ impl PartialEq for Block {
 }
 
 impl Block {
-    // Two kind of methos, one kind static method which not reading
+    // Two kind of methods, one kind static method which not reading
     // or writing into field of our struct, like the constructor.
+    // TODO: consider if we need to not make public
     pub fn new(nonce: i32, previous_hash: Vec<u8>) -> Self {
         let time_now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -146,17 +147,32 @@ impl BlockChain {
             blockchain_address: address,
         };
 
-        // create empty zeroing block
+        // create genesis block
         let b: Block = Block::new(0, vec![0 as u8, 32]);
-        // bc.create_block(0, &vec![0 as u8; 32]); TODO: why we don't use this anymore?
 
-        // "queue" the block?
+        // add the block to the chain
         bc.chain.push(b);
 
-        // mint the block
+        // mine the block to the chain
         bc.mining();
 
         bc
+    }
+
+    pub fn mining(&mut self) -> bool {
+        // when a block is mined, a transaction need to be created to record the value
+        // that the blockchain send to the miner
+        let tx: Transaction = Transaction::new(
+            BlockChain::MINING_SENDER.clone().into(), // sender
+            self.blockchain_address.clone().into(),   // reciever
+            BlockChain::MINING_REWARD,                // value
+        );
+
+        self.add_transaction(&tx);
+        // TODO: we don't need to pass the nonce to the create_block method.
+        // Each block will have its own founded nonce.
+        self.create_block(0, &self.last_block().hash());
+        true
     }
 
     pub fn create_block(&mut self, nonce: i32, previous_hash: &Vec<u8>) {
@@ -164,13 +180,15 @@ impl BlockChain {
         // to the new contructor.
         let mut b = Block::new(nonce, previous_hash.clone());
 
+        // add the pending transactions to the block
         for tx in self.transaction_pool.iter() {
             b.transactions.push(tx.clone());
         }
 
+        // all the trxs attached to the block needs to be cleared from the pool
         self.transaction_pool.clear();
 
-        // do proof of work
+        // resolve proof of work computation
         let now = Instant::now();
         let proof_hash = BlockChain::do_proof_of_work(&mut b);
         let elapsed = now.elapsed();
@@ -178,6 +196,24 @@ impl BlockChain {
         println!("proof of current block: {:?}", proof_hash);
 
         self.chain.push(b);
+    }
+
+    fn do_proof_of_work(block: &mut Block) -> String {
+        const DIFFICULTY: usize = BlockChain::DIFFICULTY;
+
+        loop {
+            // create and transform hash to hex
+            let hash: Vec<u8> = block.hash();
+            let hash_str: String = hex::encode(&hash);
+
+            // check if the hash starts with the required number of zeros
+            if hash_str[0..DIFFICULTY] == "0".repeat(DIFFICULTY) {
+                return hash_str;
+            }
+
+            // increment nonce
+            *block += 1;
+        }
     }
 
     pub fn print(&self) {
@@ -273,33 +309,6 @@ impl BlockChain {
         self.transaction_pool.push(tx.serialization());
     }
 
-    fn do_proof_of_work(block: &mut Block) -> String {
-        loop {
-            let hash: Vec<u8> = block.hash();
-            let hash_str: String = hex::encode(&hash);
-
-            if hash_str[0..BlockChain::DIFFICULTY] == "0".repeat(BlockChain::DIFFICULTY) {
-                return hash_str;
-            }
-
-            *block += 1;
-        }
-    }
-
-    pub fn mining(&mut self) -> bool {
-        // when a lbock is mint, a transaction need to be created to record the value
-        // that the blockchain send to the miner
-        let tx: Transaction = Transaction::new(
-            BlockChain::MINING_SENDER.clone().into(), // sender
-            self.blockchain_address.clone().into(),   // reciever
-            BlockChain::MINING_REWARD,                // value
-        );
-
-        self.add_transaction(&tx);
-        self.create_block(0, &self.last_block().hash());
-        true
-    }
-
     pub fn calculate_total_amount(&self, address: String) -> i64 {
         let mut total_amount: i64 = 0;
         for i in 0..self.chain.len() {
@@ -328,6 +337,4 @@ impl BlockChain {
         }
         total_amount
     }
-
-
 }
