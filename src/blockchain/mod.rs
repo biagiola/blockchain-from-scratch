@@ -59,9 +59,7 @@ impl PartialEq for Block {
 }
 
 impl Block {
-    // Two kind of methods, one kind static method which not reading
-    // or writing into field of our struct, like the constructor.
-    // TODO: consider if we need to not make public
+    // TODO: consider if we need to make this private
     pub fn new(nonce: i32, previous_hash: Vec<u8>) -> Self {
         let time_now = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -76,27 +74,33 @@ impl Block {
     }
 
     pub fn print(&self) {
+        println!("{} Block {}", ("-").repeat(26), ("-").repeat(26));
         println!("timestamp: {:}", self.time_stamp);
         println!("nonce: {}", self.nonce);
+        println!("hash: {:?}", self.hash());
         println!("previous_hash: {:?}", self.previous_hash);
+        // println!("transactions: {:?}", self.transactions); // raw transaction
 
-        // raw transaction
-        // println!("transactions: {:?}", self.transactions);
-
-        // encoded transaction
-        for (idx, tx) in self.transactions.iter().enumerate() {
+        // encoded transactions
+        println!("{} transactions {}", ("*").repeat(4), ("*").repeat(41));
+        for (i, tx) in self.transactions.iter().enumerate() {
             // TODO: verify, to_vec suppose to allow us not lose ownership
-            let transaction: Transaction = Transaction::deserialization(&tx.to_vec());
+            let deserilized: Transaction = Transaction::deserialization(&tx.to_vec());
 
-            // we made transaction implement our custom default trait
-            println!("the {}'th transaction is: {}", idx, transaction);
+            // transaction implement our custom default trait
+            println!("tx index: {}", i);
+            println!("tx to_vec: {:?}", tx.to_vec());
+            println!("tx deserialized: {}", deserilized);
         }
+
+        // blocks ends here
+        println!("{}", ("*").repeat(59));
     }
 
     pub fn hash(&self) -> Vec<u8> {
         let mut bin = Vec::<u8>::new();
         bin.extend(self.nonce.to_be_bytes());
-        bin.extend(self.previous_hash.clone());
+        bin.extend(self.previous_hash.clone()); // TODO: use reference
         bin.extend(self.time_stamp.to_be_bytes());
 
         for tx in self.transactions.iter() {
@@ -141,35 +145,40 @@ impl BlockChain {
     const MINING_REWARD: u64 = 1; // TODO: right now we're not considering floats actually
 
     pub fn new(address: String) -> Self {
+        // create blockchain struct
         let mut bc = BlockChain {
             transaction_pool: Vec::<Vec<u8>>::new(),
             chain: Vec::<Block>::new(),
             blockchain_address: address,
         };
 
-        // create genesis block
-        let b: Block = Block::new(0, vec![0 as u8, 32]);
+        // create block struct (genesis)
+        // TODO: separate block and blockchain into two files
+        let b: Block = Block::new(0, vec![0 as u8]);
 
-        // add the block to the chain
+        // add the block to the blockchain
         bc.chain.push(b);
 
-        // mine the block to the chain
+        // mine the block to the blockchain
         bc.mining();
 
         bc
     }
 
     pub fn mining(&mut self) -> bool {
-        // when a block is mined, a transaction need to be created to record the value
-        // that the blockchain send to the miner
+        // if a block is mined, we need to create a transaction to
+        // rewards to the miner when proof of work was done
         let tx: Transaction = Transaction::new(
-            BlockChain::MINING_SENDER.clone().into(), // sender
-            self.blockchain_address.clone().into(),   // reciever
-            BlockChain::MINING_REWARD,                // value
+            BlockChain::MINING_SENDER.into(),       // sender address
+            self.blockchain_address.clone().into(), // reciever address
+            BlockChain::MINING_REWARD,              // reward amount
         );
-
         self.add_transaction(&tx);
-        self.create_block(&self.last_block().hash());
+
+        // hash all the block field's using sha256
+        let hash = &self.last_block().hash();
+        self.create_block(hash);
+
         true
     }
 
@@ -189,11 +198,12 @@ impl BlockChain {
         self.transaction_pool.clear();
 
         // resolve proof of work computation
-        let now = Instant::now();
-        let proof_hash = BlockChain::do_proof_of_work(&mut b);
-        let elapsed = now.elapsed();
-        println!("compuse time: {:?}", elapsed);
-        println!("proof of current block: {:?}", proof_hash);
+        // let now = Instant::now();
+        BlockChain::do_proof_of_work(&mut b);
+        // let elapsed = now.elapsed();
+
+        // println!("compuse time: {:?}", elapsed);
+        // println!("proof of current block: {:?}", proof_hash);
 
         self.chain.push(b);
     }
@@ -221,7 +231,7 @@ impl BlockChain {
             println!("{} chain {} {}", "=".repeat(25), i, "=".repeat(25));
             block.print();
         }
-        println!("{}", "=".repeat(25));
+        println!("{}", "=".repeat(60));
     }
 
     pub fn last_block(&self) -> &Block {
@@ -305,8 +315,9 @@ impl BlockChain {
                 return;
             }
         }
-
-        self.transaction_pool.push(tx.serialization());
+        let serialized_tx = tx.serialization();
+        // println!("holis: {:?}", serialized_tx);
+        self.transaction_pool.push(serialized_tx);
     }
 
     pub fn calculate_total_amount(&self, address: String) -> i64 {
